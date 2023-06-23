@@ -31,10 +31,10 @@ extension FileProviderHTTPError {
     }
 }
 
-internal var completionHandlersForTasks = [String: [Int: SimpleCompletionHandler]]()
-internal var downloadCompletionHandlersForTasks = [String: [Int: (URL) -> Void]]()
-internal var dataCompletionHandlersForTasks = [String: [Int: (Data) -> Void]]()
-internal var responseCompletionHandlersForTasks = [String: [Int: (URLResponse) -> Void]]()
+internal var completionHandlersForTasks = ThreadSafeDictionary<String, [Int: SimpleCompletionHandler]>()
+internal var downloadCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (URL) -> Void]>()
+internal var dataCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (Data) -> Void]>()
+internal var responseCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (URLResponse) -> Void]>()
 
 internal func initEmptySessionHandler(_ uuid: String) {
     completionHandlersForTasks[uuid] = [:]
