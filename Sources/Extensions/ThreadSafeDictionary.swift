@@ -49,8 +49,9 @@ public class ThreadSafeDictionary<K: Hashable, V> {
     }
 
     func removeValue(forKey key: K) -> V? {
-        var value: V? = self[key]
+        var value: V?
         self.queue.async(flags: .barrier) {
+            value = self[key]
             self.dictionary.removeValue(forKey: key)
         }
         return value
