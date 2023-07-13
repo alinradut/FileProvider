@@ -31,16 +31,16 @@ extension FileProviderHTTPError {
     }
 }
 
-internal var completionHandlersForTasks = ThreadSafeDictionary<String, [Int: SimpleCompletionHandler]>()
-internal var downloadCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (URL) -> Void]>()
-internal var dataCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (Data) -> Void]>()
-internal var responseCompletionHandlersForTasks = ThreadSafeDictionary<String, [Int: (URLResponse) -> Void]>()
+internal var completionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, SimpleCompletionHandler>>()
+internal var downloadCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (URL) -> Void>>()
+internal var dataCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (Data) -> Void>>()
+internal var responseCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (URLResponse) -> Void>>()
 
 internal func initEmptySessionHandler(_ uuid: String) {
-    completionHandlersForTasks[uuid] = [:]
-    downloadCompletionHandlersForTasks[uuid] = [:]
-    dataCompletionHandlersForTasks[uuid] = [:]
-    responseCompletionHandlersForTasks[uuid] = [:]
+    completionHandlersForTasks[uuid] = .init()
+    downloadCompletionHandlersForTasks[uuid] = .init()
+    dataCompletionHandlersForTasks[uuid] = .init()
+    responseCompletionHandlersForTasks[uuid] = .init()
 }
 
 internal func removeSessionHandler(for uuid: String) {
