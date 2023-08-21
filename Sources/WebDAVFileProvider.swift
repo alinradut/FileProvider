@@ -169,6 +169,38 @@ open class WebDAVFileProvider: HTTPFileProvider, FileProviderSharing {
             completionHandler(volume)
         })
     }
+
+    /// Returns volume/provider information asynchronously using a custom XML payload.
+    /// - Parameter xml: Custom XML payload to use for the quota query.
+    /// - Parameter volumeInfo: Information of filesystem/Provider returned by system/server.
+    open func storageProperties(xml: String, completionHandler: @escaping (_ volumeInfo: VolumeObject?) -> Void) {
+        // Not all WebDAV clients implements RFC2518 which allows geting storage quota.
+        // In this case you won't get error. totalSize is NSURLSessionTransferSizeUnknown
+        // and used space is zero.
+        guard let baseURL = baseURL else {
+            return
+        }
+        var request = URLRequest(url: baseURL)
+        request.httpMethod = "PROPFIND"
+        request.setValue("0", forHTTPHeaderField: "Depth")
+        request.setValue(authentication: credential, with: credentialType)
+        request.setValue(contentType: .xml, charset: .utf8)
+        request.httpBody = xml.data(using: .ascii) ?? .init()
+        runDataTask(with: request, completionHandler: { (data, response, error) in
+            guard let data = data, let attr = DavResponse.parse(xmlResponse: data, baseURL: self.baseURL).first else {
+                completionHandler(nil)
+                return
+            }
+
+            let volume = VolumeObject(allValues: [:])
+            volume.creationDate = attr.prop["creationdate"].flatMap { Date(rfcString: $0) }
+            volume.availableCapacity = attr.prop["quota-available-bytes"].flatMap({ Int64($0) }) ?? 0
+            if let usage = attr.prop["quota-used-bytes"].flatMap({ Int64($0) }) {
+                volume.totalCapacity = volume.availableCapacity + usage
+            }
+            completionHandler(volume)
+        })
+    }
     
     /**
      Search files inside directory using query asynchronously.

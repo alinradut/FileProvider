@@ -421,4 +421,29 @@ class FilesProviderTests: XCTestCase, FileProviderDelegate {
         }
         return
     }
+
+    func testCustomWebDavQuotaQuery() {
+        guard let urlStr = ProcessInfo.processInfo.environment["webdav_url"] else { return }
+        let url = URL(string: urlStr)!
+        let cred: URLCredential?
+        if let user = ProcessInfo.processInfo.environment["webdav_user"], let pass = ProcessInfo.processInfo.environment["webdav_password"] {
+            cred = URLCredential(user: user, password: pass, persistence: .forSession)
+        } else {
+            cred = nil
+        }
+        let provider = WebDAVFileProvider(baseURL: url, credential: cred)!
+        provider.delegate = self
+
+        // NextCloud requires the xmlns:oc and xmlns:nc namespaces, otherwise it won't handle the query.
+        let xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\" xmlns:nc=\"http://nextcloud.org/ns\"><d:prop><d:quota-available-bytes/><d:quota-used-bytes/></d:prop></d:propfind>"
+        let desc = "Retrieving quota for NextCloud"
+        print("Test started: \(desc).")
+        let expectation = XCTestExpectation(description: desc)
+        provider.storageProperties(xml: xml) { (volumeInfo) in
+            XCTAssertNotNil(volumeInfo, "\(desc) failed: empty volume info")
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: timeout)
+        print("Test fulfilled: \(desc).")
+    }
 }
