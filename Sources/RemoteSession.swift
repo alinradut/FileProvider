@@ -35,12 +35,14 @@ internal var completionHandlersForTasks = ThreadSafeDictionary<String, ThreadSaf
 internal var downloadCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (URL) -> Void>>()
 internal var dataCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (Data) -> Void>>()
 internal var responseCompletionHandlersForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, (URLResponse) -> Void>>()
+internal var inputStreamsForTasks = ThreadSafeDictionary<String, ThreadSafeDictionary<Int, InputStream>>()
 
 internal func initEmptySessionHandler(_ uuid: String) {
     completionHandlersForTasks[uuid] = .init()
     downloadCompletionHandlersForTasks[uuid] = .init()
     dataCompletionHandlersForTasks[uuid] = .init()
     responseCompletionHandlersForTasks[uuid] = .init()
+    inputStreamsForTasks[uuid] = .init()
 }
 
 internal func removeSessionHandler(for uuid: String) {
@@ -48,6 +50,7 @@ internal func removeSessionHandler(for uuid: String) {
     _ = downloadCompletionHandlersForTasks.removeValue(forKey: uuid)
     _ = dataCompletionHandlersForTasks.removeValue(forKey: uuid)
     _ = responseCompletionHandlersForTasks.removeValue(forKey: uuid)
+    _ = inputStreamsForTasks.removeValue(forKey: uuid)
 }
 
 /// All objects set to `FileProviderRemote.session` must be an instance of this class
@@ -155,6 +158,7 @@ final public class SessionDelegate: NSObject, URLSessionDataDelegate, URLSession
             completionHandler?(error)
             _ = completionHandlersForTasks[session.sessionDescription!]?.removeValue(forKey: task.taskIdentifier)
         }
+        _ = inputStreamsForTasks[session.sessionDescription!]?.removeValue(forKey: task.taskIdentifier)
     }
     
     public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -206,7 +210,12 @@ final public class SessionDelegate: NSObject, URLSessionDataDelegate, URLSession
         
         fileProvider.delegateNotify(op, progress: Double(uploadedBytes + totalBytesSent) / Double(totalBytes))
     }
-    
+
+    public func urlSession(_ session: URLSession, needNewBodyStreamForTask task: URLSessionTask) async -> InputStream? {
+        let stream = inputStreamsForTasks[session.sessionDescription!]?[task.taskIdentifier]
+        return stream
+    }
+
     public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         if totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown { return }
         

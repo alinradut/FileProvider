@@ -543,13 +543,19 @@ open class HTTPFileProvider: NSObject, FileProviderBasicRemote, FileProviderOper
         progress.setUserInfoObject(Progress.FileOperationKind.downloading, forKey: .fileOperationKindKey)
         
         var request = request
-        request.httpBodyStream = stream
+
         if size > 0 {
             request.setValue("\(size)", forHTTPHeaderField: "Content-Length")
         }
         let task = session.uploadTask(withStreamedRequest: request)
+
+        // since iOS 17/Xcode 15, setting request.httpBodyStream results in a runtime warning, therefore we need to store a
+        // reference to the input stream which will be returned in SessionDelegate's needNewBodyStreamForTask and cleared
+        // in SessionDelegate's didCompleteWithError.
+        inputStreamsForTasks[session.sessionDescription!]?[task.taskIdentifier] = stream
+
         self.upload_task(targetPath, progress: progress, task: task, operation: operation, completionHandler: completionHandler)
-        
+
         return progress
     }
     
