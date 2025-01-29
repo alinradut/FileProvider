@@ -1213,7 +1213,7 @@ public protocol FileProviderDelegate: class {
     ///
     /// **Attention**: The delegate must also handle the credential authentication within this method, if they are used.
     func fileproviderReceivedAuthenticationChallenge(_ fileProvider: FileProviderOperations,
-                                                     didReceive challenge: URLAuthenticationChallenge,
+                                                     challenge: URLAuthenticationChallenge,
                                                      completionHandler: ((URLSession.AuthChallengeDisposition, URLCredential?)?) -> Void)
 }
 
