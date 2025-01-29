@@ -234,15 +234,41 @@ final public class SessionDelegate: NSObject, URLSessionDataDelegate, URLSession
     public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         authenticate(didReceive: challenge, completionHandler: completionHandler)
     }
-    
+
     private func authenticate(didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        switch (challenge.previousFailureCount, credential != nil) {
-        case (0...1, true):
-            completionHandler(.useCredential, credential)
-        case (0, false):
-            completionHandler(.useCredential, challenge.proposedCredential)
-        default:
-            completionHandler(.performDefaultHandling, nil)
+        forwardAuthenticationChallenge(challenge: challenge, completionHandler: { challengeResponse in
+            if let challengeResponse {
+                completionHandler(challengeResponse.0, challengeResponse.1)
+            }
+            else {
+                // perform default validation
+                switch (challenge.previousFailureCount, credential != nil) {
+                    case (0...1, true):
+                        completionHandler(.useCredential, credential)
+                    case (0, false):
+                        completionHandler(.useCredential, challenge.proposedCredential)
+                    default:
+                        completionHandler(.performDefaultHandling, nil)
+                }
+            }
+        })
+    }
+    
+    /// Attempt to perform the authentication challenge via the fileProvider delegate.
+    ///
+    /// If the completion handler is called with a nil parameter, the authentication challenge should be resolved by the library
+    /// (the default behavior).
+    /// - Parameters:
+    ///   - challenge: URLAuthenticationChallenge
+    ///   - completionHandler: Completion handler
+    private func forwardAuthenticationChallenge(challenge: URLAuthenticationChallenge, completionHandler: (((URLSession.AuthChallengeDisposition, URLCredential?)?) -> Void)) {
+        if let fileProvider, let fileProviderDelegate = fileProvider.delegate {
+            fileProvider.delegate?.fileproviderReceivedAuthenticationChallenge(fileProvider, didReceive: challenge, completionHandler: { response in
+                completionHandler(response)
+            })
+        }
+        else {
+            completionHandler(nil)
         }
     }
 }

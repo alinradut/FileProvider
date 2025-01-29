@@ -1206,6 +1206,23 @@ public protocol FileProviderDelegate: class {
     /// Supported by some providers, especially remote ones.
     /// This method is called in main thread to avoids UI bugs.
     func fileproviderProgress(_ fileProvider: FileProviderOperations, operation: FileOperationType, progress: Float)
+    /// fileproviderReceivedAuthenticationChallenge(_:operation:) will ask the delegate to resolve the authentication challenge.
+    /// Supported by some providers, especially HTTP and FTP ones.
+    /// If the delegate does not want to resolve the authentication challenge, it must not implement this method, or it must call the completion
+    /// handler immediately with a nil parameter.
+    ///
+    /// **Attention**: The delegate must also handle the credential authentication within this method, if they are used.
+    func fileproviderReceivedAuthenticationChallenge(_ fileProvider: FileProviderOperations,
+                                                     didReceive challenge: URLAuthenticationChallenge,
+                                                     completionHandler: ((URLSession.AuthChallengeDisposition, URLCredential?)?) -> Void)
+}
+
+public extension FileProviderDelegate {
+    func fileproviderReceivedAuthenticationChallenge(_ fileProvider: FileProviderOperations,
+                                                     challenge: URLAuthenticationChallenge,
+                                                     completionHandler: ((URLSession.AuthChallengeDisposition, URLCredential?)?) -> Void) {
+        completionHandler(nil)
+    }
 }
 
 /// The `FileOperationDelegate` protocol defines methods for managing operations involving the copying, moving, linking, or removal of files and directories. When you use an `FileProvider` object to initiate a copy, move, link, or remove operation, the file provider asks its delegate whether the operation should begin at all and whether it should proceed when an error occurs.
