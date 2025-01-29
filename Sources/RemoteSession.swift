@@ -263,7 +263,7 @@ final public class SessionDelegate: NSObject, URLSessionDataDelegate, URLSession
     ///   - completionHandler: Completion handler
     private func forwardAuthenticationChallenge(challenge: URLAuthenticationChallenge, completionHandler: (((URLSession.AuthChallengeDisposition, URLCredential?)?) -> Void)) {
         if let fileProvider, let fileProviderDelegate = fileProvider.delegate {
-            fileProvider.delegate?.fileproviderReceivedAuthenticationChallenge(fileProvider, didReceive: challenge, completionHandler: { response in
+            fileProvider.delegate?.fileproviderReceivedAuthenticationChallenge(fileProvider, challenge: challenge, completionHandler: { response in
                 completionHandler(response)
             })
         }
